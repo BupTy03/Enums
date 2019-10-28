@@ -35,33 +35,37 @@ private:
 	Comp comp_;
 };
 
-template<typename>
+
+template<typename EnumType, typename = std::enable_if_t<std::is_enum_v<EnumType>>>
 struct EnumTypeTag {};
 
-template<typename EnumType>
-EnumType StrToEnum(const std::string& str, bool* success) { return StrToEnum(str, success, EnumTypeTag<EnumType>()); }
+using EnumStringType = std::string;
+
+template<typename EnumType, typename = std::enable_if_t<std::is_enum_v<EnumType>>>
+EnumType StrToEnum(const EnumStringType& str, bool* success) { return StrToEnum(str, success, EnumTypeTag<EnumType>()); }
 
 template<typename EnumType, typename = std::enable_if_t<std::is_enum_v<EnumType>>>
 struct EnumView;
 
+
 #define DECLARE_ENUM_STRINGS_CONVERSION(EnumName, MaxEnumID) \
-	std::string EnumToStr(EnumName value); \
-	EnumName StrToEnum(const std::string& str, bool* success, EnumTypeTag<EnumName>); \
+	EnumStringType EnumToStr(EnumName value); \
+	EnumName StrToEnum(const EnumStringType& str, bool* success, EnumTypeTag<EnumName>); \
 	template<> struct EnumView<EnumName> { \
-		static std::array<std::string, static_cast<std::size_t>(MaxEnumID)>::const_iterator begin(); \
-		static std::array<std::string, static_cast<std::size_t>(MaxEnumID)>::const_iterator end(); \
+		static std::array<EnumStringType, static_cast<std::size_t>(MaxEnumID)>::const_iterator begin(); \
+		static std::array<EnumStringType, static_cast<std::size_t>(MaxEnumID)>::const_iterator end(); \
 	};
 
 
 #define DEFINE_ENUM_STRINGS_CONVERSION(EnumName, MaxEnumID, ...) \
 																 \
 namespace EnumName##__EnumStringsConversion__impl__ { \
-	static const std::array<std::string, static_cast<std::size_t>(MaxEnumID)> enumStrings = { \
+	static const std::array<EnumStringType, static_cast<std::size_t>(MaxEnumID)> enumStrings = { \
 		__VA_ARGS__ \
 	}; \
 	   \
-	static std::vector<std::pair<std::string, std::size_t>> initEnumStringsToIndexes() { \
-		std::vector<std::pair<std::string, std::size_t>> result; \
+	static std::vector<std::pair<EnumStringType, std::size_t>> initEnumStringsToIndexes() { \
+		std::vector<std::pair<EnumStringType, std::size_t>> result; \
 		result.reserve(enumStrings.size()); \
 		for (std::size_t index = 0; index < enumStrings.size(); ++index) { \
 			result.emplace_back(enumStrings.at(index), index); \
@@ -71,7 +75,7 @@ namespace EnumName##__EnumStringsConversion__impl__ { \
 	} \
 } \
 	\
-	std::string EnumToStr(EnumName value) \
+	EnumStringType EnumToStr(EnumName value) \
 	{ \
 		const auto index = static_cast<int>(value); \
 		assert(index >= 0); \
@@ -80,10 +84,10 @@ namespace EnumName##__EnumStringsConversion__impl__ { \
 		return EnumName##__EnumStringsConversion__impl__::enumStrings.at(static_cast<std::size_t>(index)); \
 	} \
 	  \
-	EnumName StrToEnum(const std::string& str, bool* success, EnumTypeTag<EnumName>) { \
+	EnumName StrToEnum(const EnumStringType& str, bool* success, EnumTypeTag<EnumName>) { \
 		assert(success != nullptr); \
 									\
-		static const std::vector<std::pair<std::string, std::size_t>> stringsToIndexes = \
+		static const std::vector<std::pair<EnumStringType, std::size_t>> stringsToIndexes = \
 			EnumName##__EnumStringsConversion__impl__::initEnumStringsToIndexes(); \
 																	 \
 		const auto it = std::lower_bound(std::cbegin(stringsToIndexes), std::cend(stringsToIndexes), str, CompareFirstAdapter<>()); \
@@ -97,10 +101,10 @@ namespace EnumName##__EnumStringsConversion__impl__ { \
 	} \
 	  \
 	  \
-	std::array<std::string, static_cast<std::size_t>(MaxEnumID)>::const_iterator EnumView<EnumName>::begin() { \
+	std::array<EnumStringType, static_cast<std::size_t>(MaxEnumID)>::const_iterator EnumView<EnumName>::begin() { \
 		return std::cbegin(EnumName##__EnumStringsConversion__impl__::enumStrings); \
 	} \
-	std::array<std::string, static_cast<std::size_t>(MaxEnumID)>::const_iterator EnumView<EnumName>::end() { \
+	std::array<EnumStringType, static_cast<std::size_t>(MaxEnumID)>::const_iterator EnumView<EnumName>::end() { \
 		return std::cend(EnumName##__EnumStringsConversion__impl__::enumStrings); \
 	}
 
